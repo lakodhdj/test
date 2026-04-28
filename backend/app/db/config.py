@@ -9,16 +9,12 @@ DB_PASSWORD = config("DB_PASSWORD")
 DB_HOST = config("DB_HOST", default="db")  # имя сервиса в docker-compose
 DB_NAME = config("DB_NAME")
 DB_PORT = config("DB_PORT", cast=int, default=5432)
-DB_USE_SQLITE = config("DB_USE_SQLITE", cast=bool, default=False)
 DATABASE_URL = config("DATABASE_URL", default=None)
 
 if not DATABASE_URL:
-    if DB_USE_SQLITE:
-        DATABASE_URL = "sqlite+aiosqlite:///./ecommerce.db"
-    else:
-        DATABASE_URL = (
-            f"postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-        )
+    DATABASE_URL = (
+        f"postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    )
 
 # Создаём движок
 engine = create_async_engine(

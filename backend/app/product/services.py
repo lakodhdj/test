@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status, UploadFile
 from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.product.models import Product, Category
+from app.product.models import Product, Category, Gender, Size
 from app.product.schemas import (
     CategoryCreate,
     CategoryOut,
@@ -68,9 +68,10 @@ async def create_product(
         )
 
     product_dict["slug"] = generate_slug(product_dict["title"])
+    product_dict["image_url"] = image_path
 
     # Создаём продукт с новыми полями gender и size
-    new_product = Product(**product_dict, image_url=image_path, categories=categories)
+    new_product = Product(**product_dict, categories=categories)
 
     session.add(new_product)
     await session.commit()
@@ -146,10 +147,22 @@ async def get_all_products(
         )
 
     if gender:
-        stmt = stmt.where(Product.gender == gender)
+        try:
+            stmt = stmt.where(Product.gender == Gender(gender.lower()))
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid gender value: {gender}",
+            )
 
     if size:
-        stmt = stmt.where(Product.size == size)
+        try:
+            stmt = stmt.where(Product.size == Size(size.upper()))
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid size value: {size}",
+            )
 
     if min_price is not None:
         stmt = stmt.where(Product.price >= min_price)
