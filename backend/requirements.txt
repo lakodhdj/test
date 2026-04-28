@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+sqlalchemy[asyncio]
+asyncpg
+aiosqlite
+python-decouple
+python-jose[cryptography]
+bcrypt
+redis>=5.0.0
+minio
+python-multipart
+python-slugify
+pydantic
+pydantic-settings
+alembic
+python-dotenv
+email-validator
