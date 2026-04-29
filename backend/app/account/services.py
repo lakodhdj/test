@@ -60,10 +60,10 @@ async def authenticate_user(session: AsyncSession, user_login: UserLogin):
 
 
 async def email_verification_send(user: User):
-    token = create_email_verification_token(user.id)
+    token, verification_code = create_email_verification_token(user.id)
 
     # Отправляем реальное письмо
-    await send_verification_email(user.email, token)
+    await send_verification_email(user.email, token, verification_code)
 
     return {"msg": "Verification email sent successfully. Please check your inbox."}
 

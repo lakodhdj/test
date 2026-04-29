@@ -13,7 +13,7 @@ async def init_db():
         "Outerwear",
         "T-Shirts",
         "Jeans",
-        "Shoes",
+        "Обувь",
         "Accessories",
         "Dresses",
         "Sportswear",

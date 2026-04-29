@@ -11,7 +11,9 @@ import bcrypt
 
 from app.account.models import User
 
-JWT_SECRET_KEY = config("JWT_SECRET_KEY", default="your_very_strong_secret_key_here_change_in_prod")
+JWT_SECRET_KEY = config(
+    "JWT_SECRET_KEY", default="your_very_strong_secret_key_here_change_in_prod"
+)
 JWT_ALGORITHM = config("JWT_ALGORITHM", default="HS256")
 JWT_ACCESS_TOKEN_TIME_MIN = config("JWT_ACCESS_TOKEN_TIME_MIN", cast=int, default=30)
 JWT_REFRESH_TOKEN_TIME_DAY = config("JWT_REFRESH_TOKEN_TIME_DAY", cast=int, default=7)
@@ -113,11 +115,23 @@ async def revoke_refresh_token(token: str):
 
 # ====================== Email & Password Reset ======================
 def create_email_verification_token(user_id: int):
+    """Generate a 4-digit code for email verification"""
+    import random
+
+    verification_code = str(random.randint(1000, 9999))
     expire = datetime.now(timezone.utc) + timedelta(
         hours=EMAIL_VERIFICATION_TOKEN_TIME_HOUR
     )
-    to_encode = {"sub": str(user_id), "type": "verify_email", "exp": expire}
-    return jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+    to_encode = {
+        "sub": str(user_id),
+        "type": "verify_email",
+        "code": verification_code,
+        "exp": expire,
+    }
+    return (
+        jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM),
+        verification_code,
+    )
 
 
 def create_password_reset_token(user_id: int):

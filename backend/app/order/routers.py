@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select, delete
 from sqlalchemy.orm import selectinload
 from app.db.config import SessionDep
-from app.account.deps import get_current_user
+from app.account.deps import get_current_user, require_admin
 from app.account.models import User
 from app.order.models import Order, OrderItem, OrderStatus
 from app.order.schemas import OrderCreate
@@ -99,34 +99,37 @@ async def get_user_orders(session: SessionDep, user: User = Depends(get_current_
     }
 
 
-@router.get("/{order_id}")
-async def get_order_detail(
-    order_id: int, session: SessionDep, user: User = Depends(get_current_user)
-):
+@router.get("/admin/orders")
+async def get_all_orders(session: SessionDep, user: User = Depends(require_admin)):
+    """Get all orders for admin panel"""
     stmt = (
         select(Order)
         .options(selectinload(Order.items).selectinload(OrderItem.product))
-        .where(Order.id == order_id, Order.user_id == user.id)
+        .order_by(Order.created_at.desc())
     )
     result = await session.execute(stmt)
-    order = result.scalar_one_or_none()
-
-    if not order:
-        raise HTTPException(status_code=404, detail="Order not found")
+    orders = result.scalars().all()
 
     return {
-        "id": order.id,
-        "total_amount": order.total_amount,
-        "status": order.status.value,
-        "shipping_address": order.shipping_address,
-        "created_at": order.created_at.isoformat(),
-        "items": [
+        "orders": [
             {
-                "product_id": item.product_id,
-                "quantity": item.quantity,
-                "price_at_purchase": item.price_at_purchase,
-                "product_title": item.product.title if item.product else None,
+                "id": order.id,
+                "user_id": order.user_id,
+                "total_amount": order.total_amount,
+                "status": order.status.value,
+                "shipping_address": order.shipping_address,
+                "created_at": order.created_at.isoformat(),
+                "item_count": len(order.items),
+                "items": [
+                    {
+                        "product_id": item.product_id,
+                        "quantity": item.quantity,
+                        "price_at_purchase": item.price_at_purchase,
+                        "product_title": item.product.title if item.product else None,
+                    }
+                    for item in order.items
+                ],
             }
-            for item in order.items
-        ],
+            for order in orders
+        ]
     }

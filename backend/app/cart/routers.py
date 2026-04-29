@@ -111,7 +111,32 @@ async def get_cart(session: SessionDep, user: User = Depends(get_current_user)):
     }
 
 
-@router.post("/clear")
+@router.get("/")
+async def get_cart(session: SessionDep, user: User = Depends(get_current_user)):
+    stmt = (
+        select(CartItem)
+        .options(selectinload(CartItem.product))
+        .where(CartItem.user_id == user.id)
+    )
+    result = await session.execute(stmt)
+    cart_items = result.scalars().all()
+
+    total_amount = sum(item.quantity * item.product.price for item in cart_items)
+
+    return {
+        "items": [
+            {
+                "product": item.product,
+                "quantity": item.quantity,
+                "subtotal": item.quantity * item.product.price,
+            }
+            for item in cart_items
+        ],
+        "total_amount": total_amount,
+    }
+
+
+@router.delete("/")
 async def clear_cart(session: SessionDep, user: User = Depends(get_current_user)):
     stmt = delete(CartItem).where(CartItem.user_id == user.id)
     await session.execute(stmt)

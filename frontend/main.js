@@ -291,16 +291,28 @@ const app = {
     updateAuthUI() {
         const authBtn = document.getElementById('authBtn');
         const adminNav = document.getElementById('adminNav');
+        const wishlistLink = document.querySelector('a[href="#wishlist"]');
+        const cartLink = document.querySelector('a[href="#cart"]');
+        
         if (this.currentUser) {
             authBtn.textContent = '👤 ' + this.currentUser.email.split('@')[0];
             if (this.currentUser.is_admin) {
                 adminNav.style.display = 'inline-block';
+                // Hide wishlist and cart for admin
+                if (wishlistLink) wishlistLink.style.display = 'none';
+                if (cartLink) cartLink.style.display = 'none';
             } else {
                 adminNav.style.display = 'none';
+                // Show wishlist and cart for regular users
+                if (wishlistLink) wishlistLink.style.display = 'inline';
+                if (cartLink) cartLink.style.display = 'inline';
             }
         } else {
             authBtn.textContent = 'Вход';
             adminNav.style.display = 'none';
+            // Show wishlist and cart for guests
+            if (wishlistLink) wishlistLink.style.display = 'inline';
+            if (cartLink) cartLink.style.display = 'inline';
         }
         this.showAccountState();
     },
@@ -327,6 +339,7 @@ const app = {
         } else if (this.currentPageId === 'adminPage') {
             await this.loadAdminStats();
             await this.loadAdminProducts();
+            await this.loadAdminOrders();
         }
     },
 
@@ -451,9 +464,47 @@ const app = {
             content.style.display = 'block';
             document.getElementById('accountEmail').textContent = this.currentUser.email;
             document.getElementById('accountStatus').textContent = this.currentUser.is_verified ? 'Верифицирован' : 'Не верифицирован';
+            
+            // Show email verification form if not verified
+            const verificationForm = document.getElementById('emailVerificationForm');
+            if (verificationForm && !this.currentUser.is_verified) {
+                verificationForm.style.display = 'block';
+            } else if (verificationForm) {
+                verificationForm.style.display = 'none';
+            }
         } else {
             guest.style.display = 'block';
             content.style.display = 'none';
+        }
+    },
+
+    async verifyEmailCode() {
+        const code = document.getElementById('verificationCode').value;
+        
+        if (!code || code.length !== 4 || !code.match(/^\d+$/)) {
+            this.showMessage('Введите корректный 4-значный код', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/account/verify-email-code`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ code }),
+            });
+
+            if (response.ok) {
+                this.showMessage('Email успешно подтвержден', 'success');
+                await this.checkAuth();
+                this.showAccountState();
+                document.getElementById('verificationCode').value = '';
+            } else {
+                const data = await response.json();
+                this.showMessage(data.detail || 'Ошибка подтверждения', 'error');
+            }
+        } catch (error) {
+            this.showMessage('Ошибка сети', 'error');
         }
     },
 
@@ -479,6 +530,84 @@ const app = {
         this.showPage('adminPage');
         await this.loadAdminStats();
         await this.loadAdminProducts();
+        await this.loadAdminOrders();
+    },
+
+    showAdminTab(tab) {
+        // Hide all tabs
+        document.getElementById('adminProductsTab').style.display = 'none';
+        document.getElementById('adminOrdersTab').style.display = 'none';
+        
+        // Remove active class from all buttons
+        document.querySelectorAll('.admin-tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // Show selected tab
+        if (tab === 'products') {
+            document.getElementById('adminProductsTab').style.display = 'block';
+            document.querySelectorAll('.admin-tab-btn')[0].classList.add('active');
+        } else if (tab === 'orders') {
+            document.getElementById('adminOrdersTab').style.display = 'block';
+            document.querySelectorAll('.admin-tab-btn')[1].classList.add('active');
+        }
+    },
+
+    async loadAdminOrders() {
+        try {
+            const response = await fetch(`${API_URL}/orders/admin/orders`, {
+                credentials: 'include',
+            });
+            if (response.ok) {
+                const data = await response.json();
+                this.renderAdminOrders(data.orders || []);
+            } else {
+                document.getElementById('adminOrders').innerHTML = '<p class="empty-message">Не удалось загрузить заказы</p>';
+            }
+        } catch (error) {
+            console.error('Error loading admin orders:', error);
+            document.getElementById('adminOrders').innerHTML = '<p class="empty-message">Ошибка загрузки заказов</p>';
+        }
+    },
+
+    renderAdminOrders(orders) {
+        const container = document.getElementById('adminOrders');
+        if (!orders || orders.length === 0) {
+            container.innerHTML = '<p class="empty-message">Заказов нет</p>';
+            return;
+        }
+
+        const html = `
+            <div class="admin-orders-table">
+                <table class="orders-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Пользователь ID</th>
+                            <th>Статус</th>
+                            <th>Кол-во товаров</th>
+                            <th>Сумма</th>
+                            <th>Адрес доставки</th>
+                            <th>Дата</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${orders.map(order => `
+                            <tr>
+                                <td>#${order.id}</td>
+                                <td>${order.user_id}</td>
+                                <td><span class="order-status-badge ${order.status.toLowerCase()}">${this.translateStatus(order.status)}</span></td>
+                                <td>${order.item_count}</td>
+                                <td>${order.total_amount}₽</td>
+                                <td>${order.shipping_address}</td>
+                                <td>${new Date(order.created_at).toLocaleDateString('ru-RU')}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+        container.innerHTML = html;
     },
 
     async loadAdminStats() {
@@ -715,6 +844,33 @@ const app = {
             console.error('Error loading products:', error);
             this.showMessage('Ошибка загрузки товаров', 'error');
         }
+    },
+
+    filterProducts() {
+        this.currentPage = 1;
+        
+        // Get filter values from form inputs
+        const searchInput = document.getElementById('searchInput');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const genderFilter = document.getElementById('genderFilter');
+        const sizeFilter = document.getElementById('sizeFilter');
+        const minPrice = document.getElementById('minPrice');
+        const maxPrice = document.getElementById('maxPrice');
+        
+        if (searchInput) this.filters.search = searchInput.value.trim();
+        if (categoryFilter) this.filters.category = categoryFilter.value;
+        if (genderFilter) this.filters.gender = genderFilter.value;
+        if (sizeFilter) this.filters.size = sizeFilter.value;
+        if (minPrice) {
+            this.filters.minPrice = parseInt(minPrice.value) || 0;
+            document.getElementById('priceValue').textContent = `${this.filters.minPrice}-${this.filters.maxPrice}`;
+        }
+        if (maxPrice) {
+            this.filters.maxPrice = parseInt(maxPrice.value) || 10000;
+            document.getElementById('priceValue').textContent = `${this.filters.minPrice}-${this.filters.maxPrice}`;
+        }
+        
+        this.loadProducts();
     },
 
     async loadHomeProducts() {
@@ -1035,8 +1191,8 @@ const app = {
     async clearCart() {
         if (!this.currentUser) return;
         try {
-            const response = await fetch(`${API_URL}/cart/clear`, {
-                method: 'POST',
+            const response = await fetch(`${API_URL}/cart/`, {
+                method: 'DELETE',
                 credentials: 'include',
             });
             if (response.ok) {
@@ -1045,6 +1201,9 @@ const app = {
                     this.renderCart();
                 }
                 this.showMessage('Корзина очищена', 'success');
+            } else {
+                const data = await response.json();
+                this.showMessage(data.detail || 'Ошибка очистки', 'error');
             }
         } catch (error) {
             this.showMessage('Ошибка очистки', 'error');

@@ -211,6 +211,12 @@
                             <p><strong>Email:</strong> <span id="accountEmail"></span></p>
                             <p><strong>Статус:</strong> <span id="accountStatus"></span></p>
                         </div>
+                        <div class="form-group" id="emailVerificationForm" style="display: none;">
+                            <h3>Подтверждение Email</h3>
+                            <p>Введите 4-значный код из письма:</p>
+                            <input type="text" id="verificationCode" placeholder="0000" maxlength="4" pattern="[0-9]{4}" required>
+                            <button class="btn" onclick="app.verifyEmailCode()">Подтвердить</button>
+                        </div>
                         <div class="form-group">
                             <button class="btn btn-secondary" onclick="app.resendVerificationEmail()">Отправить письмо подтверждения</button>
                         </div>
@@ -232,9 +238,18 @@
                             <h2>Админ-панель</h2>
                             <p id="adminStats" class="admin-stats">Загрузка...</p>
                         </div>
-                        <button class="btn" onclick="app.openAdminProductForm()">Добавить товар</button>
                     </div>
-                    <div id="adminProducts" class="admin-products"></div>
+                    <div class="admin-tabs">
+                        <button class="admin-tab-btn active" onclick="app.showAdminTab('products')">Товары</button>
+                        <button class="admin-tab-btn" onclick="app.showAdminTab('orders')">Заказы</button>
+                    </div>
+                    <div id="adminProductsTab" class="admin-tab-content active">
+                        <button class="btn" onclick="app.openAdminProductForm()">Добавить товар</button>
+                        <div id="adminProducts" class="admin-products"></div>
+                    </div>
+                    <div id="adminOrdersTab" class="admin-tab-content" style="display: none;">
+                        <div id="adminOrders" class="admin-orders"></div>
+                    </div>
                 </section>
 
                 <!-- Admin Product Modal -->
@@ -336,7 +351,24 @@
 
         <!-- Footer -->
         <footer class="footer">
-            <p>&copy; 2026 Store</p>
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Store</h3>
+                    <p>Интернет-магазин нового поколения с удобным кабинетом и быстрым оформлением заказов.</p>
+                </div>
+                <div class="footer-section">
+                    <h3>Следите за нами</h3>
+                    <div class="footer-social">
+                        <a href="#" class="social-link">ВКонтакте</a>
+                        <a href="#" class="social-link">Instagram</a>
+                        <a href="#" class="social-link">Telegram</a>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <p>&copy; 2026 Store | VAT Number 01611400027</p>
+                    <p style="font-size: 12px; opacity: 0.7;">Store S.P.A 2026 | Все права защищены</p>
+                </div>
+            </div>
         </footer>
 
         <!-- Messages -->

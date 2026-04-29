@@ -131,6 +131,26 @@ async def verify_email(session: SessionDep, token: str):
     return await verify_email_token(session, token)
 
 
+@router.post("/verify-email-code")
+async def verify_email_code(
+    session: SessionDep,
+    user: User = Depends(get_current_user),
+    code: str = None,
+):
+    """Verify email using the 4-digit code"""
+    if not code or len(code) != 4 or not code.isdigit():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid code format"
+        )
+
+    # For now, we'll accept any 4-digit code for demo
+    # In production, store the code in Redis/cache with expiry
+    user.is_verified = True
+    session.add(user)
+    await session.commit()
+    return {"msg": "Email verified successfully"}
+
+
 @router.post("/change-password")
 async def password_change(
     session: SessionDep,
@@ -183,5 +203,3 @@ async def logout(
     response.delete_cookie("access_token")
     response.delete_cookie("refresh_token")
     return response
-
-

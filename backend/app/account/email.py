@@ -12,8 +12,8 @@ SMTP_PASSWORD = config("SMTP_PASSWORD", default="gkznancoingifuyl")
 FROM_EMAIL = config("FROM_EMAIL", default="timamolchanov885@gmail.com")
 
 
-async def send_verification_email(to_email: str, token: str):
-    """Отправляет письмо с ссылкой подтверждения email"""
+async def send_verification_email(to_email: str, token: str, verification_code: str):
+    """Отправляет письмо с кодом подтверждения email"""
     frontend_url = config("FRONTEND_URL", default="http://localhost:3000")
     verify_link = f"{frontend_url}/verify-email?token={token}"
 
@@ -26,7 +26,11 @@ async def send_verification_email(to_email: str, token: str):
     <html>
     <body style="font-family: Arial, sans-serif;">
         <h2>Добро пожаловать!</h2>
-        <p>Для завершения регистрации подтвердите ваш email адрес:</p>
+        <p>Для завершения регистрации подтвердите ваш email адрес.</p>
+        <p style="margin: 20px 0;">
+            <strong>Ваш код подтверждения: {verification_code}</strong>
+        </p>
+        <p>Или используйте эту ссылку:</p>
         <p style="margin: 20px 0;">
             <a href="{verify_link}" 
                style="background-color: #7c3aed; color: white; padding: 12px 24px; 
@@ -48,7 +52,9 @@ async def send_verification_email(to_email: str, token: str):
         server.login(SMTP_USER, SMTP_PASSWORD)
         server.send_message(msg)
         server.quit()
-        print(f"✅ Письмо подтверждения отправлено на {to_email}")
+        print(
+            f"✅ Письмо подтверждения отправлено на {to_email} с кодом {verification_code}"
+        )
         return True
     except Exception as e:
         print(f"❌ Ошибка отправки email: {e}")
