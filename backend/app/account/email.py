@@ -14,8 +14,6 @@ FROM_EMAIL = config("FROM_EMAIL", default="timamolchanov885@gmail.com")
 
 async def send_verification_email(to_email: str, token: str, verification_code: str):
     """Отправляет письмо с кодом подтверждения email"""
-    frontend_url = config("FRONTEND_URL", default="http://localhost:3000")
-    verify_link = f"{frontend_url}/verify-email?token={token}"
 
     msg = MIMEMultipart("alternative")
     msg["From"] = FROM_EMAIL
@@ -24,22 +22,24 @@ async def send_verification_email(to_email: str, token: str, verification_code: 
 
     html_content = f"""
     <html>
-    <body style="font-family: Arial, sans-serif;">
-        <h2>Добро пожаловать!</h2>
-        <p>Для завершения регистрации подтвердите ваш email адрес.</p>
-        <p style="margin: 20px 0;">
-            <strong>Ваш код подтверждения: {verification_code}</strong>
+    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #2563eb;">Добро пожаловать!</h2>
+        <p>Для завершения регистрации введите код подтверждения в приложении.</p>
+        <p style="margin-top: 30px; font-size: 14px;">
+            <strong>Ваш код подтверждения:</strong>
         </p>
-        <p>Или используйте эту ссылку:</p>
-        <p style="margin: 20px 0;">
-            <a href="{verify_link}" 
-               style="background-color: #7c3aed; color: white; padding: 12px 24px; 
-                      text-decoration: none; border-radius: 6px; font-weight: bold;">
-                Подтвердить email
-            </a>
+        <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
+            <p style="font-size: 48px; font-weight: bold; color: #7c3aed; margin: 0; letter-spacing: 4px;">
+                {verification_code}
+            </p>
+        </div>
+        <p style="color: #666; margin: 20px 0;">
+            Код действителен в течение <strong>1 часа</strong>.
         </p>
-        <p>Ссылка действительна в течение 1 часа.</p>
-        <p>Если вы не регистрировались — проигнорируйте это письмо.</p>
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+        <p style="font-size: 12px; color: #9ca3af;">
+            Если вы не регистрировались, проигнорируйте это письмо.
+        </p>
     </body>
     </html>
     """

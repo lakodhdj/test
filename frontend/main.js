@@ -836,12 +836,20 @@ const app = {
 
             if (response.ok) {
                 const data = await response.json();
-                this.products = data.items;
+                this.products = data.items || [];
+                console.log('Products loaded:', this.products.length, 'items');
                 this.renderProducts();
                 this.renderPagination(data.total, data.limit);
+            } else {
+                console.error('API Error:', response.status, response.statusText);
+                this.products = [];
+                this.renderProducts();
+                this.showMessage('Ошибка загрузки товаров', 'error');
             }
         } catch (error) {
             console.error('Error loading products:', error);
+            this.products = [];
+            this.renderProducts();
             this.showMessage('Ошибка загрузки товаров', 'error');
         }
     },
@@ -940,23 +948,9 @@ const app = {
         }
     },
 
-    filterProducts() {
-        this.filters.search = document.getElementById('searchInput').value;
-        this.filters.category = document.getElementById('categoryFilter').value;
-        this.filters.gender = document.getElementById('genderFilter').value;
-        this.filters.size = document.getElementById('sizeFilter').value;
-        this.filters.minPrice = document.getElementById('minPrice').value;
-        this.filters.maxPrice = document.getElementById('maxPrice').value;
-
-        document.getElementById('priceValue').textContent = `${this.filters.minPrice}-${this.filters.maxPrice}`;
-
-        this.currentPage = 1;
-        this.loadProducts();
-    },
-
     renderProducts() {
         const grid = document.getElementById('productsGrid');
-        if (this.products.length === 0) {
+        if (!this.products || this.products.length === 0) {
             grid.innerHTML = '<p class="empty-message">Товаров не найдено</p>';
             return;
         }
